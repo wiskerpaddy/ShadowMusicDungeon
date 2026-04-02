@@ -456,8 +456,17 @@ function updateLogUI(T) {
     });
 }
 
-function isGuideOpen() { return document.getElementById('guide-overlay').style.display === 'flex'; }
-function openGuide() { document.getElementById('guide-overlay').style.display = 'flex'; if (bgmTimer) { clearTimeout(bgmTimer); bgmTimer = null; } }
+function isGuideOpen() { 
+    return document.getElementById('guide-overlay').style.display === 'flex'; 
+}
+function openGuide() { 
+    loadExternalBgm();
+    document.getElementById('guide-overlay').style.display = 'flex'; 
+    if (bgmTimer) { 
+        clearTimeout(bgmTimer); 
+        bgmTimer = null; 
+    } 
+}
 function closeGuide() { 
     document.getElementById('guide-overlay').style.display = 'none';
     if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
