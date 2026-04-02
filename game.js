@@ -13,63 +13,64 @@ function playBGM() {
     const now = audioCtx.currentTime;
     if (bgmNextTime < now) bgmNextTime = now;
 
-    // --- 階層による曲の切り替え ---
-    // 現在の階が最大階層(MAX_DEPTH)ならボス曲、それ以外なら通常曲を選択
+    // 1. 曲の選択 (ボス階か通常階か)
     const isBossFloor = (gameState.depth === CONFIG.MAX_DEPTH);
     const track = isBossFloor ? SOUND_DATA.BGM_BOSS : SOUND_DATA.BGM_TRACK;
-    console.log("現在のトラック:", track); // ← これを追加
+    
+    // データがない場合は中断
+    if (!track || track.length === 0) return;
 
-    // インデックスが配列外にならないよう調整
+    // 2. 音符データの取得
     const note = track[bgmIndex % track.length];
     
-    // ボス戦中（ボスがまだ生きている）なら、さらにテンポを速く、音を激しくする
+    // ボス生存中はテンポ倍速
     const isBossAlive = gameState.monsters.some(m => m.isBoss);
     const currentDur = isBossAlive ? note.dur / 2 : note.dur;
     const currentType = isBossAlive ? 'sawtooth' : 'square';
 
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-
-    osc.type = currentType; 
-    // --- 高音補正ロジックを追加 ---
+    // 3. 周波数の計算 (補正プロセス)
     let finalFreq = note.freq;
 
-    // --- アルトサックスモードの補正 (短3度上げる) ---
-    // --- 修正後 ---
-    if (finalFreq > 0) {
-        // すでに上で osc は作成済みなので、二重に const osc しない
-        // note.freq ではなく、補正済みの finalFreq をセットする
-        osc.frequency.setValueAtTime(finalFreq, bgmNextTime); 
+    // --- A. アルトサックスモードの補正 (短3度上げる) ---
+    if (isSaxMode && finalFreq > 0) {
+        finalFreq = finalFreq * Math.pow(2, 3/12);
     }
 
-    // 1500Hz（かなり高い音）を超えていたら、2オクターブ下げる（4分の1の周波数にする）
+    // --- B. 高音補正ロジック (きーーーん音対策) ---
     if (finalFreq > 1500) {
-        finalFreq = finalFreq / 4; 
-    } 
-    // もしそれでもまだ高ければ、さらに調整
-    else if (finalFreq > 800) {
+        finalFreq = finalFreq / 4; // 2オクターブ下げる
+    } else if (finalFreq > 800) {
         finalFreq = finalFreq / 2; // 1オクターブ下げる
     }
-    // ----------------------------
 
-    // --- 再生 ---
+    // 4. 再生処理
     if (finalFreq > 0) {
+        // OscillatorとGainはここで1つずつだけ作成する
         const osc = audioCtx.createOscillator();
-         osc.frequency.setValueAtTime(note.freq, bgmNextTime);
+        const gain = audioCtx.createGain();
+
+        osc.type = currentType; 
+        
+        // ★重要：すべての計算が終わった「finalFreq」をセットする
+        osc.frequency.setValueAtTime(finalFreq, bgmNextTime);
+
+        // 音量の設定 (ポーンという減衰音)
+        gain.gain.setValueAtTime(0.03, bgmNextTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, bgmNextTime + currentDur);
+
+        // 接続して鳴らす
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(bgmNextTime);
+        osc.stop(bgmNextTime + currentDur);
     }
-    gain.gain.setValueAtTime(0.03, bgmNextTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, bgmNextTime + currentDur);
 
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-
-    osc.start(bgmNextTime);
-    osc.stop(bgmNextTime + currentDur);
-
+    // 5. 次の音への準備
     bgmNextTime += currentDur;
-    // track.length を使うことで、曲の長さに合わせてループ
     bgmIndex = (bgmIndex + 1) % track.length;
 
+    // タイマー予約
     bgmTimer = setTimeout(playBGM, currentDur * 1000);
 }
 
