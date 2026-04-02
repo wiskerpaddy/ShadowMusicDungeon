@@ -23,12 +23,24 @@ function playBGM() {
     // ボス戦中（ボスがまだ生きている）なら、さらにテンポを速く、音を激しくする
     const isBossAlive = gameState.monsters.some(m => m.isBoss);
     const currentDur = isBossAlive ? note.dur / 2 : note.dur;
-    const currentType = isBossAlive ? 'sawtooth' : 'triangle';
+    const currentType = isBossAlive ? 'sawtooth' : 'square';
 
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
 
     osc.type = currentType; 
+    // --- 高音補正ロジックを追加 ---
+    let finalFreq = note.freq;
+
+    // 1500Hz（かなり高い音）を超えていたら、2オクターブ下げる（4分の1の周波数にする）
+    if (finalFreq > 1500) {
+        finalFreq = finalFreq / 4; 
+    } 
+    // もしそれでもまだ高ければ、さらに調整
+    else if (finalFreq > 800) {
+        finalFreq = finalFreq / 2; // 1オクターブ下げる
+    }
+    // ----------------------------
     osc.frequency.setValueAtTime(note.freq, bgmNextTime);
     
     gain.gain.setValueAtTime(0.03, bgmNextTime);
