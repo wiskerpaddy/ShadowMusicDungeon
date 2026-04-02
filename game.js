@@ -35,34 +35,32 @@ function playBGM() {
     let finalFreq = note.freq;
 
     if (finalFreq > 0) {
-        // ① まずサックスモードの計算を「先」に行う（元の音階を基準にずらす）
-        if (isSaxMode) {
-            finalFreq = finalFreq * Math.pow(2, 3/12); 
+        // 1. まず、元の音に対して「耳に優しいオクターブ下げ」を行う（基準の音域を固定）
+        if (finalFreq > 1200) finalFreq /= 8;
+        else if (finalFreq > 600) finalFreq /= 4;
+        else if (finalFreq > 300) finalFreq /= 2;
+
+        // 2. その「耳に優しくなった音」をベースに、サックス補正を掛ける
+        const saxBtn = document.getElementById('saxModeBtn');
+        const saxActive = saxBtn && saxBtn.style.backgroundColor !== ""; 
+
+        if (saxActive) {
+            // 短3度（3半音）上げる本来の計算式
+            finalFreq = finalFreq * Math.pow(2, 3/12);
         }
 
-        // ② その「ずれた音」に対して、耳に優しいオクターブ調整を行う
-        // 判定基準を少し緩め、変化を殺さないようにします
-        if (finalFreq > 1000) {
-            finalFreq /= 4; // 2オクターブ下げる
-        } else if (finalFreq > 500) {
-            finalFreq /= 2; // 1オクターブ下げる
-        }
+        // 確認用ログ：これで ON の時の方が必ず数値が大きくなるはずです
+        console.log(`🎷サックス:${saxActive?'ON':'OFF'} -> 周波数:${finalFreq.toFixed(1)}Hz`);
 
-        // ③ デバッグログ（これがコンソールに出れば、プログラムは100%動いています）
-        console.log(`[BGM] Sax:${isSaxMode?'ON':'OFF'} Piano:${isPianoMode?'ON':'OFF'} -> ${finalFreq.toFixed(2)}Hz`);
-
-        // ④ 再生（計算済みの finalFreq を渡す）
+        // 3. 再生
         const instrument = isPianoMode ? piano : synth;
         instrument.triggerAttackRelease(finalFreq, currentDur, Tone.now());
     }
 
     bgmIndex = (bgmIndex + 1) % track.length;
-    
-    // 前のタイマーが残っていたらクリア（二重再生防止）
     if (bgmTimer) clearTimeout(bgmTimer);
     bgmTimer = setTimeout(playBGM, currentDur * 1000);
 }
-
 function toggleMute() {
     isMuted = !isMuted;
     const btn = document.getElementById('mute-btn');
@@ -85,7 +83,8 @@ function toggleSaxMode() {
     const btn = document.getElementById('saxModeBtn');
     if (btn) {
         btn.innerText = `🎷: ${isSaxMode ? 'ON' : 'OFF'}`;
-        btn.style.backgroundColor = isSaxMode ? '#ffaa00' : '';
+        // style.backgroundColor をセットすることで、上の playBGM が「ON」だと認識します
+        btn.style.backgroundColor = isSaxMode ? '#ffaa00' : ''; 
     }
 }
 
