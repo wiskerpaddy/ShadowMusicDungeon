@@ -34,6 +34,13 @@ function playBGM() {
     // --- 高音補正ロジックを追加 ---
     let finalFreq = note.freq;
 
+    // --- アルトサックスモードの補正 (短3度上げる) ---
+    if (isSaxMode && finalFreq > 0) {
+        // 短3度上げる = 周波数を 約1.189倍 する
+        // 計算式: freq * 2^(3/12)
+        finalFreq = finalFreq * Math.pow(2, 3/12);
+    }
+
     // 1500Hz（かなり高い音）を超えていたら、2オクターブ下げる（4分の1の周波数にする）
     if (finalFreq > 1500) {
         finalFreq = finalFreq / 4; 
@@ -43,8 +50,12 @@ function playBGM() {
         finalFreq = finalFreq / 2; // 1オクターブ下げる
     }
     // ----------------------------
-    osc.frequency.setValueAtTime(note.freq, bgmNextTime);
-    
+
+    // --- 再生 ---
+    if (finalFreq > 0) {
+        const osc = audioCtx.createOscillator();
+         osc.frequency.setValueAtTime(note.freq, bgmNextTime);
+    }
     gain.gain.setValueAtTime(0.03, bgmNextTime);
     gain.gain.exponentialRampToValueAtTime(0.001, bgmNextTime + currentDur);
 
