@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>BGM Data Tester</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 50px; background: #eee; }
+        button { padding: 15px 25px; font-size: 18px; cursor: pointer; margin: 10px; }
+        #status { margin-top: 20px; color: #666; }
+    </style>
+</head>
+<body>
+
+    <h1>BGM Test Player</h1>
+    
+    <button onclick="initAudio()">1. 音声を有効化</button><br>
+    <button onclick="toggleSax()">2. サックスモード: <span id="saxStatus">OFF</span></button><br>
+    <button onclick="startBGM()">3. BGM再生開始</button>
+
+    <div id="status">JSONを読み込んでください</div>
+
+    <script>
+        let audioCtx = null;
+        let bgmData = null;
+        let isSaxMode = false;
+        let nextNoteTime = 0;
+        let noteIndex = 0;
+
+        // --- 1. JSONの読み込み ---
+        async function loadData() {
+            try {
+                const response = await fetch('../music_data.json');
+                bgmData = await response.json();
+                document.getElementById('status').innerText = "JSON読み込み成功！";
+            } catch (e) {
+                document.getElementById('status').innerText = "エラー: JSONが見つかりません";
+            }
+        }
+        loadData();
+
+        // --- 2. 音声コンテキストの初期化 ---
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            document.getElementById('status').innerText = "音声準備完了";
+        }
+
+        // --- 3. サックスモード切り替え ---
+        function toggleSax() {
+            isSaxMode = !isSaxMode;
+            document.getElementById('saxStatus').innerText = isSaxMode ? "ON" : "OFF";
+        }
+
+        // --- 4. 再生ロジック (最小構成) ---
+        function playNextNote() {
+            // YOUDO_1 を再生ターゲットにする
+            const track = bgmData.YOUDO_1;
+            const note = track[noteIndex % track.length];
+            
+            let freq = note.freq;
+
+            if (freq > 0) {
+                // サックスモード補正 (短3度上げる)
+                if (isSaxMode) freq *= Math.pow(2, 3/12);
+
+                // 高音補正 (2オクターブ下げる)
+                if (freq > 1500) freq /= 4;
+                else if (freq > 800) freq /= 2;
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+
+                osc.type = isSaxMode ? 'triangle' : 'triangle';
+                osc.frequency.setValueAtTime(freq, nextNoteTime);
+
+                gain.gain.setValueAtTime(0.05, nextNoteTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + note.dur);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                osc.start(nextNoteTime);
+                osc.stop(nextNoteTime + note.dur);
+            }
+
+            // 次の音へ
+            nextNoteTime += note.dur;
+            noteIndex++;
+
+            // 次の予約 (精度のために少し早めに scheduling)
+            const delay = (nextNoteTime - audioCtx.currentTime) * 1000;
+            setTimeout(playNextNote, Math.max(0, delay - 50));
+        }
+
+        function startBGM() {
+            if (!bgmData || !audioCtx) return alert("準備ができていません");
+            nextNoteTime = audioCtx.currentTime;
+            playNextNote();
+            document.getElementById('status').innerText = "再生中...";
+        }
+    </script>
+</body>
+</html>
