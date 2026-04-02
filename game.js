@@ -35,10 +35,11 @@ function playBGM() {
     let finalFreq = note.freq;
 
     // --- アルトサックスモードの補正 (短3度上げる) ---
-    if (isSaxMode && finalFreq > 0) {
-        // 短3度上げる = 周波数を 約1.189倍 する
-        // 計算式: freq * 2^(3/12)
-        finalFreq = finalFreq * Math.pow(2, 3/12);
+    // --- 修正後 ---
+    if (finalFreq > 0) {
+        // すでに上で osc は作成済みなので、二重に const osc しない
+        // note.freq ではなく、補正済みの finalFreq をセットする
+        osc.frequency.setValueAtTime(finalFreq, bgmNextTime); 
     }
 
     // 1500Hz（かなり高い音）を超えていたら、2オクターブ下げる（4分の1の周波数にする）
