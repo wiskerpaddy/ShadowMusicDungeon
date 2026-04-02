@@ -271,3 +271,26 @@ const SOUND_DATA = {
         { freq: 103.83, dur: 0.8 }  // 低い G#
     ],
 };
+
+async function loadExternalBgm() {
+    try {
+        const response = await fetch('music_data.json');
+        const bgmData = await response.json();
+        
+        // コンソールで中身を確認
+        console.log("読み込んだJSON全体:", bgmData);
+
+        // キー名を指定して代入（YOUDO_1 などの名前を確認してください）
+        if (bgmData.YOUDO_1) {
+            SOUND_DATA.BGM_TRACK = bgmData.YOUDO_1;
+            console.log("BGM_TRACKを更新しました。音数:", SOUND_DATA.BGM_TRACK.length);
+        }
+        if (bgmData.YOUDO_2) {
+            SOUND_DATA.BGM_BOSS = bgmData.YOUDO_2;
+            console.log("BGM_BOSSを更新しました。音数:", SOUND_DATA.BGM_BOSS.length);
+        }
+
+    } catch (error) {
+        console.error("読み込みエラー:", error);
+    }
+}

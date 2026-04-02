@@ -15,7 +15,8 @@ function playBGM() {
     // 現在の階が最大階層(MAX_DEPTH)ならボス曲、それ以外なら通常曲を選択
     const isBossFloor = (gameState.depth === CONFIG.MAX_DEPTH);
     const track = isBossFloor ? SOUND_DATA.BGM_BOSS : SOUND_DATA.BGM_TRACK;
-    
+    console.log("現在のトラック:", track); // ← これを追加
+
     // インデックスが配列外にならないよう調整
     const note = track[bgmIndex % track.length];
     
