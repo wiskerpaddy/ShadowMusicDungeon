@@ -32,30 +32,34 @@ function playBGM() {
     const currentDur = isBossAlive ? note.dur / 2 : note.dur;
 
     // --- 計算プロセス ---
-    let freq = note.freq;
+    let finalFreq = note.freq;
 
-    if (freq > 0) {
-        // 1. まず、耳に痛くない「オクターブ」を決定する（ベースの音域を決める）
-        // 1200Hz以上の高い音は、一律で 1/8 (3オクターブ下) にして耳を守る
-        if (freq > 1200) freq /= 8;
-        else if (freq > 600) freq /= 4;
-        else if (freq > 300) freq /= 2;
-
-        // 2. その「耳に優しい音」に対して、サックス補正をかける
+    if (finalFreq > 0) {
+        // ① まずサックスモードの計算を「先」に行う（元の音階を基準にずらす）
         if (isSaxMode) {
-            // 短3度（3半音）上げる
-            freq = freq * Math.pow(2, 3/12);
+            finalFreq = finalFreq * Math.pow(2, 3/12); 
         }
 
-        // デバッグログ：F12のコンソールで、ON/OFF時に数値が変わるか見てください
-        console.log(`サックス:${isSaxMode ? 'ON' : 'OFF'} -> 鳴らす音:${freq.toFixed(1)}Hz`);
+        // ② その「ずれた音」に対して、耳に優しいオクターブ調整を行う
+        // 判定基準を少し緩め、変化を殺さないようにします
+        if (finalFreq > 1000) {
+            finalFreq /= 4; // 2オクターブ下げる
+        } else if (finalFreq > 500) {
+            finalFreq /= 2; // 1オクターブ下げる
+        }
 
-        // 3. 再生
+        // ③ デバッグログ（これがコンソールに出れば、プログラムは100%動いています）
+        console.log(`[BGM] Sax:${isSaxMode?'ON':'OFF'} Piano:${isPianoMode?'ON':'OFF'} -> ${finalFreq.toFixed(2)}Hz`);
+
+        // ④ 再生（計算済みの finalFreq を渡す）
         const instrument = isPianoMode ? piano : synth;
-        instrument.triggerAttackRelease(freq, currentDur, Tone.now());
+        instrument.triggerAttackRelease(finalFreq, currentDur, Tone.now());
     }
 
     bgmIndex = (bgmIndex + 1) % track.length;
+    
+    // 前のタイマーが残っていたらクリア（二重再生防止）
+    if (bgmTimer) clearTimeout(bgmTimer);
     bgmTimer = setTimeout(playBGM, currentDur * 1000);
 }
 
