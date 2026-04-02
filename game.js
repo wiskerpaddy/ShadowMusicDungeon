@@ -4,73 +4,58 @@ let bgmNextTime = 0;
 let isMuted = false;
 let bgmTimer = null;
 let audioCtx = null;
-let isSaxMode = false; // サックスモードの状態管理
 let curLang = 'en';    // --- 2. ゲームの状態管理 --
+let isSaxMode = false; // サックスモードの状態管理
+let isPianoMode = false; // ピアノモードの状態
 
+// 高品質なピアノサンプラーの作成
+const piano = new Tone.Sampler({
+    urls: {
+        A1: "A1.mp3", A2: "A2.mp3", A3: "A3.mp3", A4: "A4.mp3",
+        A5: "A5.mp3", A6: "A6.mp3",
+    },
+    baseUrl: "https://tonejs.github.io/audio/salamander/",
+    onload: () => console.log("Piano loaded!")
+}).toDestination();
+
+// 標準のシンセ（ピアノOFFの時用）
+const synth = new Tone.PolySynth(Tone.Synth).toDestination();
 function playBGM() {
-    if (isMuted || !audioCtx) return;
+    if (isMuted) return;
 
-    const now = audioCtx.currentTime;
-    if (bgmNextTime < now) bgmNextTime = now;
-
-    // 1. 曲の選択 (ボス階か通常階か)
     const isBossFloor = (gameState.depth === CONFIG.MAX_DEPTH);
     const track = isBossFloor ? SOUND_DATA.BGM_BOSS : SOUND_DATA.BGM_TRACK;
-    
-    // データがない場合は中断
     if (!track || track.length === 0) return;
 
-    // 2. 音符データの取得
     const note = track[bgmIndex % track.length];
-    
-    // ボス生存中はテンポ倍速
     const isBossAlive = gameState.monsters.some(m => m.isBoss);
     const currentDur = isBossAlive ? note.dur / 2 : note.dur;
-    const currentType = isBossAlive ? 'sawtooth' : 'square';
 
-    // 3. 周波数の計算 (補正プロセス)
-    let finalFreq = note.freq;
+    // --- 計算プロセス ---
+    let freq = note.freq;
 
-    // --- A. アルトサックスモードの補正 (短3度上げる) ---
-    if (isSaxMode && finalFreq > 0) {
-        finalFreq = finalFreq * Math.pow(2, 3/12);
+    if (freq > 0) {
+        // 1. まず、耳に痛くない「オクターブ」を決定する（ベースの音域を決める）
+        // 1200Hz以上の高い音は、一律で 1/8 (3オクターブ下) にして耳を守る
+        if (freq > 1200) freq /= 8;
+        else if (freq > 600) freq /= 4;
+        else if (freq > 300) freq /= 2;
+
+        // 2. その「耳に優しい音」に対して、サックス補正をかける
+        if (isSaxMode) {
+            // 短3度（3半音）上げる
+            freq = freq * Math.pow(2, 3/12);
+        }
+
+        // デバッグログ：F12のコンソールで、ON/OFF時に数値が変わるか見てください
+        console.log(`サックス:${isSaxMode ? 'ON' : 'OFF'} -> 鳴らす音:${freq.toFixed(1)}Hz`);
+
+        // 3. 再生
+        const instrument = isPianoMode ? piano : synth;
+        instrument.triggerAttackRelease(freq, currentDur, Tone.now());
     }
 
-    // --- B. 高音補正ロジック (きーーーん音対策) ---
-    if (finalFreq > 1500) {
-        finalFreq = finalFreq / 4; // 2オクターブ下げる
-    } else if (finalFreq > 800) {
-        finalFreq = finalFreq / 2; // 1オクターブ下げる
-    }
-
-    // 4. 再生処理
-    if (finalFreq > 0) {
-        // OscillatorとGainはここで1つずつだけ作成する
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-
-        osc.type = currentType; 
-        
-        // ★重要：すべての計算が終わった「finalFreq」をセットする
-        osc.frequency.setValueAtTime(finalFreq, bgmNextTime);
-
-        // 音量の設定 (ポーンという減衰音)
-        gain.gain.setValueAtTime(0.03, bgmNextTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, bgmNextTime + currentDur);
-
-        // 接続して鳴らす
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(bgmNextTime);
-        osc.stop(bgmNextTime + currentDur);
-    }
-
-    // 5. 次の音への準備
-    bgmNextTime += currentDur;
     bgmIndex = (bgmIndex + 1) % track.length;
-
-    // タイマー予約
     bgmTimer = setTimeout(playBGM, currentDur * 1000);
 }
 
@@ -82,11 +67,22 @@ function toggleMute() {
     else { bgmNextTime = audioCtx ? audioCtx.currentTime : 0; playBGM(); }
 }
 
+function togglePianoMode() {
+    isPianoMode = !isPianoMode;
+    const btn = document.getElementById('pianoModeBtn');
+    if (btn) {
+        btn.innerText = `🎹: ${isPianoMode ? 'ON' : 'OFF'}`;
+        btn.style.backgroundColor = isPianoMode ? '#00ccff' : '';
+    }
+}
+
 function toggleSaxMode() {
     isSaxMode = !isSaxMode;
     const btn = document.getElementById('saxModeBtn');
-    btn.innerText = `サックスモード: ${isSaxMode ? 'ON' : 'OFF'}`;
-    btn.style.backgroundColor = isSaxMode ? '#ffaa00' : ''; // ONの時に色を変える
+    if (btn) {
+        btn.innerText = `🎷: ${isSaxMode ? 'ON' : 'OFF'}`;
+        btn.style.backgroundColor = isSaxMode ? '#ffaa00' : '';
+    }
 }
 
 // ★gameState の中身は「名前: 値,」の形だけで書きます
@@ -498,7 +494,8 @@ function openGuide() {
         bgmTimer = null; 
     } 
 }
-function closeGuide() { 
+function closeGuide() {
+    Tone.start();
     document.getElementById('guide-overlay').style.display = 'none';
     if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
     audioCtx.resume().then(() => {

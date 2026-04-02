@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Shadow Music Dungeon</title>
@@ -15,11 +16,16 @@
                 <button id="btn-en" class="lang-btn" onclick="setLang('en')">EN</button>
                 <button id="btn-es" class="lang-btn" onclick="setLang('es')">ES</button>
                 <button id="mute-btn" class="lang-btn" onclick="toggleMute()">🔊</button>
-                <button id="saxModeBtn" onclick="toggleSaxMode()">🎷: OFF</button>
             </div>
             <div class="top-icons">
                 <div class="ach-circle" id="ach-btn" onclick="toggleAchievements()">🏆</div>
                 <div class="help-circle" onclick="openGuide()">?</div>
+            </div>
+        </div>
+        <div id="second-bar">
+            <div>
+                <button id="saxModeBtn" onclick="toggleSaxMode()">🎷: OFF</button>
+                <button id="pianoModeBtn" onclick="togglePianoMode()">🎹: OFF</button>
             </div>
         </div>
         <div id="ach-overlay" style="display:none;" onclick="toggleAchievements()">
