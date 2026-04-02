@@ -1,5 +1,6 @@
-# ShadowRogueDungeon
+# ShadowMusicDungeon
 マルチリンガル（日・英・西）に対応し、レトロなシンセサイザー音とBGMを搭載した、ブラウザで遊べる本格ローグライク・ミニゲームです。
+またBGMを最後に紹介するOMRプロジェクトで楽譜の写真から、このゲームのBGM用のJsonファイルを作成する機能を入れたバージョンです。
 
 # 遊び方ガイド
 ## 1. 起動方法
@@ -89,3 +90,5 @@
 ### 状態遷移図（ゲーム開始から終了まで）
 ![alt text](READMEIMG/README_stateChageImage.png)
 
+## BGM用Json作成プロジェクトはこちら
+https://github.com/wiskerpaddy/OMRProjrct/blob/main/README.md
