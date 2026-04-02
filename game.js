@@ -4,6 +4,8 @@ let bgmNextTime = 0;
 let isMuted = false;
 let bgmTimer = null;
 let audioCtx = null;
+let isSaxMode = false; // サックスモードの状態管理
+let curLang = 'en';    // --- 2. ゲームの状態管理 --
 
 function playBGM() {
     if (isMuted || !audioCtx) return;
@@ -67,8 +69,12 @@ function toggleMute() {
     else { bgmNextTime = audioCtx ? audioCtx.currentTime : 0; playBGM(); }
 }
 
-// --- 2. ゲームの状態管理 ---
-let curLang = 'en';
+function toggleSaxMode() {
+    isSaxMode = !isSaxMode;
+    const btn = document.getElementById('saxModeBtn');
+    btn.innerText = `サックスモード: ${isSaxMode ? 'ON' : 'OFF'}`;
+    btn.style.backgroundColor = isSaxMode ? '#ffaa00' : ''; // ONの時に色を変える
+}
 
 // ★gameState の中身は「名前: 値,」の形だけで書きます
 let gameState = { 
