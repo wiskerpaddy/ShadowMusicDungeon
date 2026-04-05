@@ -22,11 +22,13 @@
             </div>
         </div>
         <div id="second-bar">
-            <div>
-                <button id="saxModeBtn" onclick="toggleSaxMode()">🎷: OFF</button>
-                <button id="pianoModeBtn" onclick="togglePianoMode()">🎹: OFF</button>
-                <button id="mute-btn" class="lang-btn" onclick="toggleMute()">🔊</button>
-                <div style="margin: 10px 0;">
+            <div style="margin: 0;">
+                <div>
+                    <button id="saxModeBtn" onclick="toggleSaxMode()">🎷: OFF</button>
+                    <button id="pianoModeBtn" onclick="togglePianoMode()">🎹: OFF</button>
+                    <button id="mute-btn" class="lang-btn" onclick="toggleMute()">🔇</button>
+                </div>
+                <div>
                     <label for="tempoSelect">🕒 Tempo (BPM目安): </label>
                     <select id="tempoSelect" onchange="updateTempo()" style="padding:5px;">
                         <option value="1.5">60 (Slow)</option>

@@ -1,7 +1,7 @@
 // --- 1. 変数宣言とBGM制御 ---
 let bgmIndex = 0;
 let bgmNextTime = 0;
-let isMuted = false;
+let isMuted = true;
 let bgmTimer = null;
 let audioCtx = null;
 let curLang = 'en';        // ゲームの状態管理
@@ -82,9 +82,9 @@ function playBGM() {
 }
 
 function toggleMute() {
-    isMuted = !isMuted;
     const btn = document.getElementById('mute-btn');
-    btn.textContent = isMuted ? "🔇" : "🔊";
+    isMuted = !isMuted;
+    btn.textContent = isMuted ? "🔊" : "🔇";
     if (isMuted) { clearTimeout(bgmTimer); } 
     else { bgmNextTime = audioCtx ? audioCtx.currentTime : 0; playBGM(); }
 }

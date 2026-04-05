@@ -179,3 +179,10 @@
         text-shadow: none;
     }
 }
+
+#second-bar > div {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* ★これで「謎のスペース」を無視して左端に吸着します */
+    gap: 5px;               /* 行同士の間隔 */
+}
