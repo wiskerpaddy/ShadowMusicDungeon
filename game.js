@@ -4,9 +4,24 @@ let bgmNextTime = 0;
 let isMuted = false;
 let bgmTimer = null;
 let audioCtx = null;
-let curLang = 'en';    // --- 2. ゲームの状態管理 --
-let isSaxMode = false; // サックスモードの状態管理
-let isPianoMode = false; // ピアノモードの状態
+let curLang = 'en';        // ゲームの状態管理
+let isSaxMode = false;     // サックスモードの状態管理
+let isPianoMode = false;   // ピアノモードの状態
+let tempoMultiplier = 1.0; // デフォルトは等倍
+
+let gameState = { 
+    depth: 1, 
+    player: {}, 
+    map: [], 
+    explored: [], 
+    monsters: [], 
+    log: [], 
+    gameOver: false, 
+    initialized: false,
+    totalKills: 0,
+    warpCount: 0,
+    bossDefeated: false 
+};
 
 // 高品質なピアノサンプラーの作成
 const piano = new Tone.Sampler({
@@ -29,38 +44,43 @@ function playBGM() {
 
     const note = track[bgmIndex % track.length];
     const isBossAlive = gameState.monsters.some(m => m.isBoss);
-    const currentDur = isBossAlive ? note.dur / 2 : note.dur;
 
-    // --- 計算プロセス ---
-    let finalFreq = note.freq;
+    // --- 【修正ポイント】ここでの計算を最優先にする ---
+    // ユーザーが選択した倍率をリアルタイムに反映
+    const currentMultiplier = window.tempoMultiplier || 1.0;
+    const baseDuration = isBossAlive ? note.dur / 2 : note.dur;
+    
+    // 次の音を鳴らすまでの待ち時間を計算
+    const nextTick = baseDuration * currentMultiplier;
 
-    if (finalFreq > 0) {
-        // 1. まず、元の音に対して「耳に優しいオクターブ下げ」を行う（基準の音域を固定）
+    if (note.freq > 0) {
+        let finalFreq = note.freq;
+
+        // オクターブ補正
         if (finalFreq > 1200) finalFreq /= 8;
         else if (finalFreq > 600) finalFreq /= 4;
         else if (finalFreq > 300) finalFreq /= 2;
 
-        // 2. その「耳に優しくなった音」をベースに、サックス補正を掛ける
+        // サックスモード補正
         const saxBtn = document.getElementById('saxModeBtn');
         const saxActive = saxBtn && saxBtn.style.backgroundColor !== ""; 
-
         if (saxActive) {
-            // 短3度（3半音）上げる本来の計算式
             finalFreq = finalFreq * Math.pow(2, 3/12);
         }
 
-        // 確認用ログ：これで ON の時の方が必ず数値が大きくなるはずです
-        console.log(`🎷サックス:${saxActive?'ON':'OFF'} -> 周波数:${finalFreq.toFixed(1)}Hz`);
-
-        // 3. 再生
+        // 再生実行（音自体の長さも nextTick に合わせる）
         const instrument = isPianoMode ? piano : synth;
-        instrument.triggerAttackRelease(finalFreq, currentDur, Tone.now());
+        instrument.triggerAttackRelease(finalFreq, nextTick, Tone.now());
+        
+        console.log(`🎵再生中: ${finalFreq.toFixed(1)}Hz / 次の音まで: ${nextTick.toFixed(2)}秒`);
     }
 
+    // 5. 次のノートへの予約（ここが nextTick になっていることが重要です）
     bgmIndex = (bgmIndex + 1) % track.length;
     if (bgmTimer) clearTimeout(bgmTimer);
-    bgmTimer = setTimeout(playBGM, currentDur * 1000);
+    bgmTimer = setTimeout(playBGM, nextTick * 1000);
 }
+
 function toggleMute() {
     isMuted = !isMuted;
     const btn = document.getElementById('mute-btn');
@@ -88,20 +108,11 @@ function toggleSaxMode() {
     }
 }
 
-// ★gameState の中身は「名前: 値,」の形だけで書きます
-let gameState = { 
-    depth: 1, 
-    player: {}, 
-    map: [], 
-    explored: [], 
-    monsters: [], 
-    log: [], 
-    gameOver: false, 
-    initialized: false,
-    totalKills: 0,
-    warpCount: 0,
-    bossDefeated: false 
-}; // ここでしっかりセミコロンで閉じる
+function updateTempo() {
+    const select = document.getElementById('tempoSelect');
+    window.tempoMultiplier = parseFloat(select.value);
+    console.log(`テンポ倍率を変更しました: ${window.tempoMultiplier}`);
+}
 
 // --- 3. システム関数 (言語・音効) ---
 function setLang(lang) {
@@ -164,10 +175,8 @@ function init() {
     gameState.depth = 1; 
     gameState.log = []; 
     gameState.gameOver = false;
-    // --- ここを追加 ---
     gameState.totalKills = 0;
     gameState.warpCount = 0;
-    // ------------------
     addLog('start', 'log-system');
     setupLevel();
     gameState.initialized = true;

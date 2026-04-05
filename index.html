@@ -26,6 +26,17 @@
                 <button id="saxModeBtn" onclick="toggleSaxMode()">🎷: OFF</button>
                 <button id="pianoModeBtn" onclick="togglePianoMode()">🎹: OFF</button>
                 <button id="mute-btn" class="lang-btn" onclick="toggleMute()">🔊</button>
+                <div style="margin: 10px 0;">
+                    <label for="tempoSelect">🕒 Tempo (BPM目安): </label>
+                    <select id="tempoSelect" onchange="updateTempo()" style="padding:5px;">
+                        <option value="1.5">60 (Slow)</option>
+                        <option value="1.2">80</option>
+                        <option value="1.0" selected>100 (Normal)</option>
+                        <option value="0.8">120</option>
+                        <option value="0.7">140</option>
+                        <option value="0.6">160 (Fast)</option>
+                    </select>
+                </div>
             </div>
         </div>
         <div id="ach-overlay" style="display:none;" onclick="toggleAchievements()">
