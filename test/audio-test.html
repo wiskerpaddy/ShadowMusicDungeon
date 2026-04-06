@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>ShadowDungeon Audio Debugger</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <style>
+        body { background: #1a1a1a; color: #eee; font-family: 'Courier New', Courier, monospace; padding: 20px; }
+        .panel { border: 2px solid #444; padding: 20px; border-radius: 10px; max-width: 500px; background: #222; }
+        button { background: #444; color: white; border: 1px solid #666; padding: 10px; cursor: pointer; margin: 5px; }
+        button:active { background: #666; }
+        .status { font-size: 12px; color: #888; margin-bottom: 10px; }
+        input[type=range] { vertical-align: middle; }
+        .highlight { color: #00ccff; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="panel">
+        <h2>🎵 Audio Engine v2</h2>
+        <div class="status" id="loadStatus">⌛ Instruments Loading...</div>
+        
+        <button onclick="startTest()">▶ START GAME BGM</button>
+        <button onclick="AudioEngine.stopBGM()">Stop</button>
+        <hr>
+
+        <div>
+            <button id="pBtn" onclick="togglePiano()">🎹 Piano: OFF</button>
+            <button id="sBtn" onclick="toggleSax()">🎷 Sax: OFF</button>
+        </div>
+
+        <p>⏱ BPM: <input type="range" min="60" max="200" value="100" oninput="updateBPM(this.value)"> 
+            <span id="bpmVal" class="highlight">100</span>
+        </p>
+
+        <p>🔈 Volume: <input type="range" min="0" max="1" step="0.05" value="0.5" oninput="updateVolume(this.value)">
+            <span id="vVal" class="highlight">0.5</span>
+        </p>
+    </div>
+
+<script type="module">
+        import { AudioEngine } from './audio-engine.js';
+        window.AudioEngine = AudioEngine;
+
+        // 1. 主旋律（SAX）: 迷いのないメロディ
+        const MELODY_TRACK = [
+            {freq: 440.00, dur: 1.0}, {freq: 523.25, dur: 1.0}, {freq: 587.33, dur: 1.0}, {freq: 659.25, dur: 1.0},
+            {freq: 523.25, dur: 1.0}, {freq: 440.00, dur: 1.0}, {freq: 392.00, dur: 1.0}, {freq: 440.00, dur: 1.0}
+        ];
+
+        // 2. 伴奏（PIANO）: アルペジオを 0.25 刻みにして「消える」隙を与えない
+        const CHORD_TRACK = [
+            {freq: 220.00, dur: 0.25}, {freq: 261.63, dur: 0.25}, {freq: 329.63, dur: 0.25}, {freq: 261.63, dur: 0.25},
+            {freq: 220.00, dur: 0.25}, {freq: 261.63, dur: 0.25}, {freq: 329.63, dur: 0.25}, {freq: 261.63, dur: 0.25},
+            {freq: 196.00, dur: 0.25}, {freq: 246.94, dur: 0.25}, {freq: 293.66, dur: 0.25}, {freq: 246.94, dur: 0.25},
+            {freq: 220.00, dur: 0.25}, {freq: 261.63, dur: 0.25}, {freq: 329.63, dur: 0.25}, {freq: 261.63, dur: 0.25}
+        ];
+
+        // 3. ベース（SYNTH）: 土台を支える全音符
+        const BASS_TRACK = [
+            {freq: 110.00, dur: 4.0}, 
+            {freq: 98.00, dur: 4.0}
+        ];
+
+        // --- ここを一つにまとめました ---
+        window.startTest = () => {
+            AudioEngine.initCtx(); // 回路接続
+            AudioEngine.stopAll(); // 二重再生防止
+            
+            const now = Tone.now() + 0.1; // 開始時間を同期させる
+
+            // 3つのトラックを同時にスタート！
+            AudioEngine.playTrack(MELODY_TRACK, 'sax', 0, now);
+            AudioEngine.playTrack(CHORD_TRACK, 'piano', 0, now);
+            AudioEngine.playTrack(BASS_TRACK, 'synth', 0, now);
+            
+            console.log("🚀 BGM Started with 3 tracks");
+        };
+
+        // --- UI操作用の関数 ---
+        window.togglePiano = () => {
+            AudioEngine.isPianoMode = !AudioEngine.isPianoMode;
+            const btn = document.getElementById('pBtn');
+            btn.innerText = `🎹 Piano: ${AudioEngine.isPianoMode ? 'ON' : 'OFF'}`;
+            btn.style.backgroundColor = AudioEngine.isPianoMode ? "#005577" : "#444";
+        };
+
+        window.toggleSax = () => {
+            AudioEngine.isSaxMode = !AudioEngine.isSaxMode;
+            const btn = document.getElementById('sBtn');
+            btn.innerText = `🎷 Sax: ${AudioEngine.isSaxMode ? 'ON' : 'OFF'}`;
+            btn.style.backgroundColor = AudioEngine.isSaxMode ? "#775500" : "#444";
+        };
+
+        window.updateBPM = (val) => {
+            AudioEngine.setBPM(parseInt(val));
+            document.getElementById('bpmVal').innerText = val;
+        };
+
+        window.updateVolume = (val) => {
+            AudioEngine.setVolume(parseFloat(val));
+            document.getElementById('vVal').innerText = val;
+        };
+    </script>
+</body>
+</html>
